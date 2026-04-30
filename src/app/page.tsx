@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { Plant } from "@/lib/types";
 import { AddPlantModal } from "@/components/AddPlantModal";
 import { FrostDateBanner } from "@/components/FrostDateBanner";
+import { useGardenConfig } from "@/components/GardenConfigProvider";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -110,6 +111,7 @@ function PlantCard({ plant }: { readonly plant: Plant }) {
 }
 
 export default function Home() {
+  const { gardenName } = useGardenConfig();
   const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export default function Home() {
     <>
       {/* Welcome Banner */}
       <section className="mb-6 rounded-2xl bg-primary p-5 text-text-on-primary shadow-md sm:mb-8 sm:p-6">
-        <h2 className="text-2xl font-bold sm:text-3xl"><span aria-hidden="true">🌱</span> My Garden</h2>
+        <h2 className="text-2xl font-bold sm:text-3xl"><span aria-hidden="true">🌱</span> {gardenName}</h2>
         <p className="mt-1 text-sm text-text-on-primary/80 sm:text-base">
           Track your plants, upload photos, and watch them grow!
         </p>

@@ -10,6 +10,7 @@ export interface PlantEntry {
   date: string; // ISO date
   note: string;
   images: PlantImage[];
+  profileId?: string;
 }
 
 export interface PlantCareInfo {
@@ -26,6 +27,7 @@ export interface WateringEvent {
   id: string;
   date: string; // ISO date
   note: string;
+  profileId?: string;
 }
 
 export interface Plant {
@@ -50,4 +52,11 @@ export interface UserSettings {
   location: string; // city or zip
   theme: "green" | "earth" | "ocean";
   frostDates: FrostDates | null;
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+  avatarEmoji: string;
+  createdAt: string; // ISO date
 }

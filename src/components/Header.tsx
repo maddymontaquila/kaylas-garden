@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useGardenConfig } from "./GardenConfigProvider";
+import { useProfile } from "./ProfileContext";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
 const navLinks = [
@@ -12,14 +14,16 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
+  const { gardenName } = useGardenConfig();
+  const { activeProfile, setActiveProfile } = useProfile();
 
   return (
     <header className="bg-bg-header shadow-md">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-3 sm:px-4">
-        <Link href="/" aria-label="Kayla's Garden – Home" className="flex items-center gap-2">
+        <Link href="/" aria-label={`${gardenName} – Home`} className="flex items-center gap-2">
           <span aria-hidden="true" className="text-2xl">🌱</span>
           <span className="text-lg font-bold text-text-on-primary sm:text-xl">
-            Kayla&apos;s Garden
+            {gardenName}
           </span>
         </Link>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
@@ -42,6 +46,19 @@ export function Header() {
               );
             })}
           </nav>
+          {activeProfile && (
+            <div className="flex items-center gap-2 rounded-full bg-white/12 px-3 py-1.5 text-sm text-text-on-primary shadow-sm">
+              <span aria-hidden="true" className="text-base">{activeProfile.avatarEmoji}</span>
+              <span className="font-medium">{activeProfile.name}</span>
+              <button
+                type="button"
+                onClick={() => setActiveProfile(null)}
+                className="rounded-full border border-white/25 px-2 py-0.5 text-xs font-semibold text-text-on-primary/90 transition hover:bg-white/10"
+              >
+                Switch
+              </button>
+            </div>
+          )}
           <div
             className="border-l border-white/20 pl-3 sm:ml-2"
             role="group"

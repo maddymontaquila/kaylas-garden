@@ -13,7 +13,12 @@ export async function POST(
   try {
     const { id } = await context.params;
     const body = (await request.json()) as Omit<PlantEntry, "id">;
-    const entry = await addPlantEntry(id, body);
+    const entry = await addPlantEntry(id, {
+      date: body.date,
+      note: body.note,
+      images: body.images ?? [],
+      profileId: body.profileId,
+    });
     return NextResponse.json(entry, { status: 201 });
   } catch (err: unknown) {
     console.error("POST /api/plants/[id]/entries failed:", err);

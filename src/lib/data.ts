@@ -1,9 +1,16 @@
 import { randomUUID } from "crypto";
-import type { Plant, PlantEntry, UserSettings, WateringEvent } from "./types";
+import type {
+  Plant,
+  PlantEntry,
+  Profile,
+  UserSettings,
+  WateringEvent,
+} from "./types";
 import { downloadJson, uploadJson } from "./blob-storage";
 
 const PLANTS_BLOB = "json/plants.json";
 const SETTINGS_BLOB = "json/settings.json";
+const PROFILES_BLOB = "json/profiles.json";
 
 const DEFAULT_SETTINGS: UserSettings = {
   location: "Boston, MA",
@@ -119,4 +126,40 @@ export async function updateSettings(
   const updated: UserSettings = { ...current, ...settings };
   await uploadJson(SETTINGS_BLOB, updated, etag);
   return updated;
+}
+
+// --- Profiles ---
+
+export async function getProfiles(): Promise<Profile[]> {
+  const { data } = await downloadJson<Profile[]>(PROFILES_BLOB, []);
+  return data;
+}
+
+export async function createProfile(
+  profile: Omit<Profile, "id" | "createdAt">
+): Promise<Profile> {
+  const { data: profiles, etag } = await downloadJson<Profile[]>(
+    PROFILES_BLOB,
+    []
+  );
+  const newProfile: Profile = {
+    ...profile,
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+  };
+  profiles.push(newProfile);
+  await uploadJson(PROFILES_BLOB, profiles, etag);
+  return newProfile;
+}
+
+export async function deleteProfile(id: string): Promise<void> {
+  const { data: profiles, etag } = await downloadJson<Profile[]>(
+    PROFILES_BLOB,
+    []
+  );
+  const filtered = profiles.filter((profile) => profile.id !== id);
+  if (filtered.length === profiles.length) {
+    throw new Error(`Profile with id "${id}" not found`);
+  }
+  await uploadJson(PROFILES_BLOB, filtered, etag);
 }

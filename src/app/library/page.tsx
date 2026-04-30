@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useGardenConfig } from "@/components/GardenConfigProvider";
 import {
   PLANT_LIBRARY,
   searchLibraryPlants,
@@ -37,6 +38,7 @@ const POPULAR_PLANTS: readonly LibraryPlant[] = POPULAR_PLANT_IDS
   .filter((p): p is LibraryPlant => Boolean(p));
 
 export default function LibraryPage() {
+  const { gardenName } = useGardenConfig();
   const [query, setQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
   const [selected, setSelected] = useState<LibraryPlant | null>(null);
@@ -45,8 +47,8 @@ export default function LibraryPage() {
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    document.title = "Plant Library — Kayla's Garden";
-  }, []);
+    document.title = `Plant Library — ${gardenName}`;
+  }, [gardenName]);
 
   const results = useMemo(() => {
     if (!activeQuery.trim()) return [] as readonly LibraryPlant[];
@@ -260,7 +262,7 @@ export default function LibraryPage() {
                     ? "✓ Added to Garden"
                     : adding
                       ? "Adding…"
-                      : "+ Add to My Garden"}
+                      : `+ Add to ${gardenName}`}
                 </button>
               </div>
             </div>

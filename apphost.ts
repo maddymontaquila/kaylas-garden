@@ -3,6 +3,10 @@ import { createBuilder, ContainerLifetime } from './.modules/aspire.js';
 async function main(): Promise<void> {
   const builder = await createBuilder();
 
+  const gardenName = builder.addParameter('gardenName');
+  const gardenTheme = builder.addParameter('gardenTheme');
+  const ownerName = builder.addParameter('ownerName');
+
   await builder.addAzureContainerAppEnvironment('acaenv');
 
   const plantdata = builder.addAzureStorage('storage')
@@ -17,6 +21,9 @@ async function main(): Promise<void> {
   await builder
     .addNextJsApp('web', '.')
     .withReference(plantdata)
+    .withEnvironment('GARDEN_NAME', gardenName)
+    .withEnvironment('GARDEN_THEME', gardenTheme)
+    .withEnvironment('OWNER_NAME', ownerName)
     .withHttpEndpoint({ port: 3000, env: 'PORT' })
     .withExternalHttpEndpoints();
 

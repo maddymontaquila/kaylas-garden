@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useGardenConfig } from "@/components/GardenConfigProvider";
+import { useTheme, type Theme } from "@/components/ThemeProvider";
 import type { UserSettings, FrostDates } from "@/lib/types";
-
-type Theme = "green" | "earth" | "ocean";
 
 const themes: { id: Theme; label: string; emoji: string; swatches: string[] }[] = [
   { id: "green", label: "Garden", emoji: "🌿", swatches: ["bg-green-600", "bg-green-400", "bg-green-100"] },
@@ -12,6 +12,8 @@ const themes: { id: Theme; label: string; emoji: string; swatches: string[] }[] 
 ];
 
 export default function SettingsPage() {
+  const { gardenName } = useGardenConfig();
+  const { theme: activeTheme, setTheme } = useTheme();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [location, setLocation] = useState("");
   const [frostDates, setFrostDates] = useState<FrostDates | null>(null);
@@ -19,8 +21,8 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    document.title = "Settings — Kayla's Garden";
-  }, []);
+    document.title = `Settings — ${gardenName}`;
+  }, [gardenName]);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -50,8 +52,7 @@ export default function SettingsPage() {
   };
 
   const handleThemeChange = async (theme: Theme) => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("kaylas-garden-theme", theme);
+    setTheme(theme);
     setSettings((prev) => (prev ? { ...prev, theme } : prev));
     try {
       await fetch("/api/settings", {
@@ -145,9 +146,9 @@ export default function SettingsPage() {
             <button
               key={theme.id}
               onClick={() => void handleThemeChange(theme.id)}
-              aria-pressed={settings.theme === theme.id}
+              aria-pressed={activeTheme === theme.id}
               className={`flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all sm:gap-3 sm:p-5 ${
-                settings.theme === theme.id
+                activeTheme === theme.id
                   ? "border-primary bg-accent shadow-md"
                   : "border-border bg-bg-page hover:bg-hover"
               }`}
@@ -168,7 +169,7 @@ export default function SettingsPage() {
       <section className="rounded-xl border border-border bg-bg-card p-4 shadow-sm sm:p-6">
         <h2 className="mb-3 text-xl font-semibold text-text-primary"><span aria-hidden="true">🌱</span> About</h2>
         <p className="text-text-secondary">
-          Kayla&apos;s Garden helps you track your plants, monitor their progress, and learn about gardening. 🌱
+          {gardenName} helps you track your plants, monitor their progress, and learn about gardening. 🌱
         </p>
       </section>
     </div>

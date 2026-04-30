@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { waterPlant } from "@/lib/data";
 
 interface WaterRequestBody {
-  date: string;
-  note: string;
+  date?: string;
+  note?: string;
+  profileId?: string;
 }
 
 export async function POST(
@@ -16,6 +17,7 @@ export async function POST(
     const event = await waterPlant(id, {
       date: body.date || new Date().toISOString(),
       note: body.note || "",
+      profileId: body.profileId,
     });
     return NextResponse.json(event, { status: 201 });
   } catch (err: unknown) {

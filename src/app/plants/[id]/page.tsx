@@ -2,8 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
-import type { Plant, PlantCareInfo, PlantEntry, PlantImage, WateringEvent } from "@/lib/types";
 import Link from "next/link";
+import { useGardenConfig } from "@/components/GardenConfigProvider";
+import type { Plant, PlantCareInfo, PlantEntry, PlantImage, Profile } from "@/lib/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -28,6 +29,41 @@ function formatDate(iso: string): string {
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function getStoredProfileId(): string | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const profileId = window.localStorage.getItem("gardenProfileId")?.trim();
+  return profileId || undefined;
+}
+
+function ProfileAttribution({
+  profileId,
+  profilesById,
+}: {
+  profileId?: string;
+  profilesById: Record<string, Profile>;
+}) {
+  if (!profileId) {
+    return null;
+  }
+
+  const profile = profilesById[profileId];
+
+  return (
+    <p className="mt-1 text-xs text-text-secondary">
+      {profile ? (
+        <>
+          <span aria-hidden="true">{profile.avatarEmoji}</span> {profile.name}
+        </>
+      ) : (
+        "Unknown"
+      )}
+    </p>
+  );
 }
 
 // ── Sub-components ───────────────────────────────────────────────────
@@ -312,10 +348,12 @@ function CareInfoCard({
 
 function WateringCard({
   plant,
+  profilesById,
   onWatered,
   onIntervalChanged,
 }: {
   plant: Plant;
+  profilesById: Record<string, Profile>;
   onWatered: () => void;
   onIntervalChanged: (days: number) => Promise<void>;
 }) {
@@ -348,6 +386,7 @@ function WateringCard({
         body: JSON.stringify({
           date: new Date().toISOString(),
           note: note || "Watered plant",
+          profileId: getStoredProfileId(),
         }),
       });
       if (!res.ok) throw new Error("Failed to log watering");
@@ -457,8 +496,11 @@ function WateringCard({
             <div className="mt-3 space-y-2">
               {recentHistory.map((event) => (
                 <div key={event.id} className="flex items-start gap-3 rounded border border-border p-2 text-sm">
-                  <span className="text-text-secondary">{formatDate(event.date)}</span>
-                  <span className="text-text-primary">{event.note}</span>
+                  <span className="min-w-28 text-text-secondary">{formatDate(event.date)}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-text-primary">{event.note}</p>
+                    <ProfileAttribution profileId={event.profileId} profilesById={profilesById} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -524,6 +566,7 @@ function AddEntryForm({
           date,
           note,
           images: uploadedImages,
+          profileId: getStoredProfileId(),
         }),
       });
 
@@ -671,7 +714,13 @@ function Lightbox({
 
 // ── Timeline Entry ───────────────────────────────────────────────────
 
-function TimelineEntry({ entry }: { entry: PlantEntry }) {
+function TimelineEntry({
+  entry,
+  profilesById,
+}: {
+  entry: PlantEntry;
+  profilesById: Record<string, Profile>;
+}) {
   const [lightboxImg, setLightboxImg] = useState<{
     src: string;
     alt: string;
@@ -695,6 +744,7 @@ function TimelineEntry({ entry }: { entry: PlantEntry }) {
           {formatDate(entry.date)}
         </p>
         <p className="mt-1 text-sm text-text-primary">{entry.note}</p>
+        <ProfileAttribution profileId={entry.profileId} profilesById={profilesById} />
 
         {entry.images.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -729,8 +779,10 @@ function TimelineEntry({ entry }: { entry: PlantEntry }) {
 export default function PlantDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { gardenName } = useGardenConfig();
 
   const [plant, setPlant] = useState<Plant | null>(null);
+  const [profilesById, setProfilesById] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -752,12 +804,42 @@ export default function PlantDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (plant) document.title = `${plant.name} — Kayla's Garden`;
-  }, [plant]);
+    if (plant) {
+      document.title = `${plant.name} — ${gardenName}`;
+    }
+  }, [gardenName, plant]);
 
   useEffect(() => {
     fetchPlant();
   }, [fetchPlant]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchProfiles = async () => {
+      try {
+        const res = await fetch("/api/profiles");
+        if (!res.ok) {
+          return;
+        }
+
+        const profiles = (await res.json()) as Profile[];
+        if (!ignore) {
+          setProfilesById(
+            Object.fromEntries(profiles.map((profile) => [profile.id, profile]))
+          );
+        }
+      } catch {
+        // Keep rendering even if profile lookup fails.
+      }
+    };
+
+    void fetchProfiles();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const handleDelete = async () => {
     try {
@@ -821,6 +903,7 @@ export default function PlantDetailPage() {
 
       <WateringCard
         plant={plant}
+        profilesById={profilesById}
         onWatered={fetchPlant}
         onIntervalChanged={async (days) => {
           const res = await fetch(`/api/plants/${params.id}`, {
@@ -845,7 +928,7 @@ export default function PlantDetailPage() {
         {sortedEntries.length > 0 ? (
           <div className="mt-4">
             {sortedEntries.map((entry) => (
-              <TimelineEntry key={entry.id} entry={entry} />
+              <TimelineEntry key={entry.id} entry={entry} profilesById={profilesById} />
             ))}
           </div>
         ) : (
